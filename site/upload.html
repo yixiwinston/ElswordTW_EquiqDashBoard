@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- 內容安全政策：只執行本站自己的腳本，圖片只來自本站與 Discord CDN。
+       connect-src 要包含 config.js 裡的 Worker 網址；Worker 若用自訂網域，把 https://*.workers.dev 換成該網域。 -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: https://cdn.discordapp.com; connect-src 'self' https://*.workers.dev; base-uri 'none'; form-action 'none'" />
+  <meta name="referrer" content="no-referrer" />
+  <title>上傳配裝｜配裝 Dashboard</title>
+  <meta name="description" content="用 Discord 登入後上傳配裝模擬器匯出的 JSON。" />
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body class="upload-page">
+  <header class="topbar">
+    <div class="brand">
+      <h1>上傳配裝</h1>
+      <p class="muted"><a href="./">← 回到配裝 Dashboard</a></p>
+    </div>
+    <div id="account" class="account"></div>
+  </header>
+
+  <main>
+    <div id="notice" class="notice" role="status" hidden></div>
+
+    <section class="panel" aria-labelledby="upload-title">
+      <div class="panel-head">
+        <h2 id="upload-title">上傳我的配裝</h2>
+        <p class="muted">在<a id="calculator-link" href="#" target="_blank" rel="noopener">配裝模擬器</a>匯出 JSON 後直接上傳，不用改檔名。同一個角色名稱（加上相同備註）再上傳一次就是更新；每個 Discord 帳號最多保留 <span id="max-slots">5</span> 份。</p>
+      </div>
+      <div id="upload" class="upload"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="mine-title" id="mine-panel" hidden>
+      <div class="panel-head"><h2 id="mine-title">我的配裝</h2></div>
+      <div id="mine"></div>
+    </section>
+  </main>
+
+  <footer class="muted">
+    <p class="disclaimer">本網站資料僅提供同意上傳個人資訊的玩家資訊，非本人勿動。</p>
+    <p>上傳的配裝、遊戲內 ID、Discord 使用者名稱與頭像會公開在這個網站與其 GitHub 儲存庫。</p>
+    <p class="credit">裝備解碼與數值計算使用 as930010 的<a href="https://as930010.github.io/damage-calculator/" target="_blank" rel="noopener noreferrer">配裝模擬器</a>（<a href="https://github.com/as930010/damage-calculator" target="_blank" rel="noopener noreferrer">原始碼</a>），經原作者同意使用。</p>
+  </footer>
+
+  <script type="module" src="./upload.js"></script>
+</body>
+</html>

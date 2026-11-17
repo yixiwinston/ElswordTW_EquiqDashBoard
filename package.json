@@ -1,0 +1,12 @@
+{
+  "name": "loadout-dashboard",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test worker/test/worker.test.mjs",
+    "demo": "node scripts/make-demo-data.mjs --calculator ../damage-calculator && node scripts/build-index.mjs --calculator ../damage-calculator --loadouts demo/loadouts",
+    "preview": "python3 -m http.server 8080 --directory site",
+    "worker:deploy": "cd worker && npx wrangler deploy"
+  }
+}

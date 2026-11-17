@@ -1,0 +1,70 @@
+name: CI 第二層：Worker 攻擊測試
+
+# 只有改到 Worker、格式規則或攻擊測試時才跑（約 1～2 分鐘）。
+# 步驟與 security/README.md 相同：假的 Discord／GitHub ＋ 本機 workerd，全程不用真實密鑰。
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'worker/**'
+      - 'site/lib/**'
+      - 'security/**'
+      - '.github/workflows/ci-worker.yml'
+  pull_request:
+    paths:
+      - 'worker/**'
+      - 'site/lib/**'
+      - 'security/**'
+      - '.github/workflows/ci-worker.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-worker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  attack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      WRANGLER_SEND_METRICS: 'false'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - name: 安裝 wrangler
+        working-directory: worker
+        run: npm install --no-audit --no-fund
+      - name: 產生沙盒密鑰（每次臨時產生，跑完即丟）
+        run: |
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$RUNNER_TEMP/sandbox.pem"
+          {
+            echo 'DISCORD_CLIENT_SECRET=sandbox'
+            echo 'SESSION_SECRET=sandbox-session'
+            echo 'OWNER_KEY_SECRET=sandbox-owner'
+            printf 'GITHUB_APP_PRIVATE_KEY="%s"\n' "$(awk '{printf "%s\\n", $0}' "$RUNNER_TEMP/sandbox.pem")"
+          } > security/.dev.vars
+      - name: 啟動假的 Discord／GitHub 與本機 Worker
+        run: |
+          node security/mock-upstream.mjs 8799 > "$RUNNER_TEMP/mock.log" 2>&1 &
+          (cd security && npx --prefix ../worker wrangler dev -c wrangler.sandbox.toml --port 8787 --ip 127.0.0.1 > "$RUNNER_TEMP/wrangler.log" 2>&1) &
+          for i in $(seq 1 60); do
+            if curl -s -o /dev/null http://127.0.0.1:8787/ && curl -s -o /dev/null http://127.0.0.1:8799/__state; then
+              echo "已就緒（$((i * 2)) 秒）"; exit 0
+            fi
+            sleep 2
+          done
+          echo '等候逾時，wrangler 輸出：'; cat "$RUNNER_TEMP/wrangler.log"; exit 1
+      - name: Worker 攻擊測試
+        run: node security/attack.mjs
+      - name: 失敗時顯示伺服器輸出
+        if: failure()
+        run: |
+          echo '--- wrangler ---'; cat "$RUNNER_TEMP/wrangler.log" || true
+          echo '--- mock ---'; cat "$RUNNER_TEMP/mock.log" || true

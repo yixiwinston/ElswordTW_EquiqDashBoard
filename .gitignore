@@ -1,0 +1,6 @@
+node_modules/
+site/data/index.json
+.wrangler/
+.dev.vars
+*.pem
+*.local.md

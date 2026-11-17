@@ -1,0 +1,64 @@
+name: CI 第三層：前端注入測試
+
+# 只有改到網頁或產生 index.json 的程式時才跑（約 2～3 分鐘）。
+# 先用計算機把 demo/ 的示範資料建成 index.json，再把每個字串換成 XSS 載荷，用 Chrome 確認只會顯示成文字。
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'scripts/build-index.mjs'
+      - 'scripts/lib/**'
+      - 'security/frontend-xss.py'
+      - '.github/workflows/ci-frontend.yml'
+  pull_request:
+    paths:
+      - 'site/**'
+      - 'scripts/build-index.mjs'
+      - 'scripts/lib/**'
+      - 'security/frontend-xss.py'
+      - '.github/workflows/ci-frontend.yml'
+  workflow_dispatch:
+
+# 會執行第三方（計算機 repo）的建置程式，所以只給唯讀權限。
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  xss:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ vars.CALCULATOR_REPO || 'as930010/damage-calculator' }}
+          ref: ${{ vars.CALCULATOR_REF || 'main' }}
+          path: calculator
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          package_json_file: calculator/package.json
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - name: 建置計算機
+        working-directory: calculator
+        run: |
+          pnpm install --frozen-lockfile --ignore-scripts
+          pnpm run build
+      - name: 用示範資料產生 index.json
+        run: node scripts/build-index.mjs --calculator calculator --loadouts demo/loadouts
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: 安裝 Playwright（使用 runner 內建的 Chrome）
+        run: pip install playwright
+      - name: 前端注入測試
+        run: python security/frontend-xss.py

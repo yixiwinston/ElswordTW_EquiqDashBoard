@@ -1,0 +1,70 @@
+name: Build index and deploy Pages
+
+on:
+  push:
+    branches: [main]
+    paths: ['site/**', 'data/**', 'scripts/**', '.github/workflows/deploy.yml']
+  workflow_dispatch:
+  schedule:
+    # 每天重建一次：跟上計算機的遊戲資料更新，並讓過期的配裝下架。
+    - cron: '17 19 * * *'
+
+# 拆成兩個 job：build 會執行第三方（計算機 repo）的建置程式，所以只給唯讀權限；
+# 能發布 Pages 的權限只在 deploy，它不執行任何外部程式，只上傳 build 產出的檔案。
+permissions: {}
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      # 解碼與數值計算借用配裝模擬器本身的程式。建議把 CALCULATOR_REF 設成確認過的 commit SHA，
+      # 不要長期追 main：那個 repo 若被改壞或被入侵，會直接影響這裡產出的網站內容。
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.CALCULATOR_REPO || 'as930010/damage-calculator' }}
+          ref: ${{ vars.CALCULATOR_REF || 'main' }}
+          path: calculator
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: calculator/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Build calculator modules
+        working-directory: calculator
+        run: |
+          pnpm install --frozen-lockfile --ignore-scripts
+          pnpm run build
+      - name: Build index.json
+        run: node scripts/build-index.mjs --calculator calculator
+        env:
+          ENTRY_MAX_AGE_DAYS: ${{ vars.ENTRY_MAX_AGE_DAYS || '180' }}
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
+      - id: deployment
+        uses: actions/deploy-pages@v4

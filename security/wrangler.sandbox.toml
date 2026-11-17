@@ -1,0 +1,23 @@
+# 只供本機沙盒測試：上游指到 security/mock-upstream.mjs，不會碰到真的 Discord／GitHub。
+name = "loadout-dashboard-sandbox"
+main = "../worker/src/index.js"
+compatibility_date = "2026-11-01"
+
+[[durable_objects.bindings]]
+name = "LIMITER"
+class_name = "Limiter"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Limiter"]
+
+[vars]
+SITE_URL = "http://localhost:8765/"
+GITHUB_REPO = "example/loadout-dashboard"
+GITHUB_APP_ID = "1"
+GITHUB_INSTALLATION_ID = "2"
+DISCORD_CLIENT_ID = "sandbox"
+DISCORD_GUILD_ID = "guild"
+MIN_ACCOUNT_AGE_DAYS = "30"
+DISCORD_API_BASE = "http://127.0.0.1:8799/discord"
+GITHUB_API_BASE = "http://127.0.0.1:8799/github"

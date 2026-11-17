@@ -1,0 +1,113 @@
+name: Validate Dash_ submission
+
+# 只要 PR 碰到 data/loadouts 就會被這個閘門檢查。
+# 用 pull_request（不是 pull_request_target），檢查腳本取自 base 分支，PR 的內容只當資料讀、不執行。
+# 權限拆成兩個 job：validate 只有唯讀；merge 才有寫入，而且只在 validate 通過後、對 Worker 開的分支執行。
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths: ['data/loadouts/**']
+
+permissions: {}
+
+concurrency:
+  group: validate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      reason: ${{ steps.format.outputs.reason || steps.calculator.outputs.reason }}
+    env:
+      BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      HEAD_REF: ${{ github.event.pull_request.head.ref }}
+      SAME_REPO: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Fetch PR head as data
+        run: git fetch --no-tags "https://github.com/${GITHUB_REPOSITORY}.git" "+refs/pull/${PR_NUMBER}/head"
+      # 第一關：來源、路徑、格式、配額。
+      - name: Validate format
+        id: format
+        run: node scripts/validate-submission.mjs "$BASE_SHA" "$HEAD_SHA"
+      # 第二關：用計算機實際算一次。這個 job 只有唯讀權限，建置外部程式不會碰到任何密鑰。
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.CALCULATOR_REPO || 'as930010/damage-calculator' }}
+          ref: ${{ vars.CALCULATOR_REF || 'main' }}
+          path: calculator
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: calculator/package.json
+      - name: Build calculator modules
+        working-directory: calculator
+        run: |
+          pnpm install --frozen-lockfile --ignore-scripts
+          pnpm run build
+      - name: Validate with calculator
+        id: calculator
+        run: node scripts/check-with-calculator.mjs --calculator calculator "$BASE_SHA" "$HEAD_SHA"
+
+  # 把退回原因留言在 PR 上並關閉它：網站的「我的配裝」會讀這則留言顯示給玩家，
+  # 被退回的 PR 也不會一直佔著玩家的配額。只處理 Worker 開的分支。
+  report:
+    needs: validate
+    if: >-
+      always() && needs.validate.result == 'failure'
+      && github.event.pull_request.head.repo.full_name == github.repository
+      && startsWith(github.event.pull_request.head.ref, 'dash/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      REASON: ${{ needs.validate.outputs.reason }}
+    steps:
+      - name: Comment and close
+        run: |
+          printf '<!-- dash-result -->\n%s\n' "${REASON:-檢查沒有通過，請確認檔案後再上傳一次。}" > body.md
+          gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body-file body.md
+          gh pr close "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --delete-branch
+
+  # 自動合併預設關閉（人工審核）；到 Settings → Variables 把 DASH_AUTO_MERGE 設成 true 才會啟用。
+  # 放在獨立的 job，main 就可以把「validate」設為必要檢查：merge 開始時 validate 已經是通過狀態。
+  merge:
+    needs: validate
+    if: >-
+      vars.DASH_AUTO_MERGE == 'true'
+      && github.event.pull_request.head.repo.full_name == github.repository
+      && startsWith(github.event.pull_request.head.ref, 'dash/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+    steps:
+      - name: Squash-merge the validated commit
+        run: gh pr merge "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --squash --delete-branch --match-head-commit "$HEAD_SHA"
+      # 用 GITHUB_TOKEN 合併不會觸發 push 事件，所以明確叫部署流程跑一次。
+      - name: Trigger deploy
+        run: gh workflow run deploy.yml --repo "$GITHUB_REPOSITORY" --ref "$DEFAULT_BRANCH"

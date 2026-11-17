@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- 內容安全政策：只執行本站自己的腳本，圖片只來自本站與 Discord CDN。
+       connect-src 要包含 config.js 裡的 Worker 網址；Worker 若用自訂網域，把 https://*.workers.dev 換成該網域。 -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: https://cdn.discordapp.com; connect-src 'self' https://*.workers.dev; base-uri 'none'; form-action 'none'" />
+  <meta name="referrer" content="no-referrer" />
+  <title>配裝 Dashboard</title>
+  <meta name="description" content="玩家配裝排行與明細，資料來自配裝模擬器匯出的 Dash_ 檔。" />
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <h1>配裝 Dashboard</h1>
+      <p id="updated" class="muted">載入中…</p>
+    </div>
+    <img id="hero-art" class="hero-art" alt="" hidden />
+    <div id="account" class="account"></div>
+  </header>
+
+  <main>
+    <div id="notice" class="notice" role="status" hidden></div>
+
+    <section class="tiles" id="tiles" aria-label="總覽"></section>
+
+    <div class="col">
+    <section class="panel" aria-labelledby="ranking-title">
+      <div class="panel-head">
+        <h2 id="ranking-title">玩家配裝</h2>
+        <p class="muted">點任一列看該玩家的配裝明細。數值由配裝模擬器依各自檔案內的關卡設定算出；不同職業、不同關卡設定之間僅供參考。</p>
+      </div>
+      <div class="filters">
+        <div id="class-filter" class="chips" role="group" aria-label="職業篩選"></div>
+        <div class="filter-row">
+          <input id="search" type="search" placeholder="搜尋 ID 或備註" aria-label="搜尋 Discord ID、遊戲內 ID 或備註" />
+          <select id="sort" aria-label="排序">
+            <option value="discord">依 Discord ID</option>
+            <option value="character">依遊戲內 ID</option>
+            <option value="class">依職業</option>
+            <option value="damage">依總增幅</option>
+          </select>
+        </div>
+      </div>
+      <ol id="ranking" class="ranking"></ol>
+      <p id="empty" class="empty" hidden></p>
+    </section>
+    </div>
+
+    <aside id="detail-panel" class="panel detail-panel" aria-label="配裝明細"></aside>
+  </main>
+
+  <footer class="muted">
+    <p class="disclaimer">本網站資料僅提供同意上傳個人資訊的玩家資訊，非本人勿動。</p>
+    <p>上傳的配裝、遊戲內 ID、Discord 使用者名稱與頭像會公開在這個網站與其 GitHub 儲存庫。</p>
+    <p class="credit">裝備解碼與數值計算使用 as930010 的<a href="https://as930010.github.io/damage-calculator/" target="_blank" rel="noopener noreferrer">配裝模擬器</a>（<a href="https://github.com/as930010/damage-calculator" target="_blank" rel="noopener noreferrer">原始碼</a>），經原作者同意使用。</p>
+  </footer>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

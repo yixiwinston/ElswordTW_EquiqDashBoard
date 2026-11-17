@@ -1,0 +1,36 @@
+name: CI 第一層：快速測試
+
+# 每次推程式或開 PR 都跑，幾秒內完成：Worker 單元測試＋PR 閘門攻擊測試。
+# 玩家投稿（只改 data/loadouts）由 validate-submission.yml 負責，這裡略過。
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['data/loadouts/**']
+  pull_request:
+    paths-ignore: ['data/loadouts/**']
+  workflow_dispatch:
+
+# 只讀，不碰任何密鑰；fork 的 PR 也能安全地跑。
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-fast-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # Action 固定到 commit SHA（註解是對應的版本），避免標籤被改指向其他程式碼。
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - name: Worker 單元測試
+        run: npm test
+      - name: PR 閘門攻擊測試
+        run: node security/validator-attack.mjs

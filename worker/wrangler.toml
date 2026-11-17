@@ -1,0 +1,36 @@
+name = "loadout-dashboard-api"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+
+# 速率限制用的 Durable Object（原子計數）。不需要另外建立資源，第一次 deploy 會自動套用 migration。
+[[durable_objects.bindings]]
+name = "LIMITER"
+class_name = "Limiter"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Limiter"]
+
+[vars]
+# Dashboard 網站網址，結尾要有斜線。CORS 與登入後導回都以它為準。
+SITE_URL = "https://YOUR_NAME.github.io/loadout-dashboard/"
+GITHUB_REPO = "YOUR_NAME/loadout-dashboard"
+GITHUB_BASE_BRANCH = "main"
+GITHUB_APP_ID = "REPLACE"
+GITHUB_INSTALLATION_ID = "REPLACE"
+DISCORD_CLIENT_ID = "REPLACE"
+# 留空 = 任何 Discord 帳號都能登入；填入後只收該伺服器成員（建議填）。
+DISCORD_GUILD_ID = ""
+# 選填：再限定某個身分組。
+DISCORD_REQUIRED_ROLE_ID = ""
+MIN_ACCOUNT_AGE_DAYS = "30"
+DAILY_LIMIT_PER_USER = "10"
+DAILY_LIMIT_GLOBAL = "300"
+# 停權名單：逗號分隔的 owner key（資料夾名稱那串 16 位十六進位），設定後立即生效。
+BLOCKED_OWNER_KEYS = ""
+
+# 以下是密鑰，不要寫在這個檔案，用 wrangler secret put 設定：
+#   DISCORD_CLIENT_SECRET
+#   SESSION_SECRET          任意 32 bytes 以上亂數
+#   OWNER_KEY_SECRET        任意 32 bytes 以上亂數；換掉它等於所有人的 owner key 重算
+#   GITHUB_APP_PRIVATE_KEY  PKCS#8 PEM（見 docs/DEPLOY.md）
