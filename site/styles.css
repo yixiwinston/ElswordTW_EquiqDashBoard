@@ -141,13 +141,20 @@ input[type="search"], input[type="text"], select {
 .detail-title .label { color: var(--text-2); font-size: .85rem; overflow-wrap: anywhere; }
 .detail-title .big { font-size: 1.7rem; font-weight: 650; line-height: 1.15; margin-top: 4px; }
 .class-art {
-  flex: 0 0 96px; height: 120px; border-radius: 10px; overflow: hidden; position: relative;
+  border-radius: 10px; overflow: hidden; position: relative;
   display: grid; place-items: center; border: 1px solid var(--line);
   background: linear-gradient(150deg, var(--surface-2), var(--track));
 }
-.class-art span { font-size: 1.5rem; font-weight: 700; letter-spacing: .04em; color: var(--text-3); }
-.class-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top center; }
-.class-art.has-image span { visibility: hidden; }
+.class-art span { font-weight: 700; letter-spacing: .04em; color: var(--text-3); }
+.class-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.class-art.icon.has-image span { visibility: hidden; }
+/* 明細橫幅：素材只有 240×60，維持接近原尺寸靠右顯示、左緣淡出，不拉伸放大以免糊掉。 */
+.class-art.banner { height: 72px; place-items: center start; padding: 0 16px; }
+.class-art.banner span { position: relative; z-index: 1; font-size: 1.1rem; color: var(--text-2); }
+.class-art.banner img {
+  inset: 0 0 0 auto; width: auto; max-width: 100%; object-fit: cover; object-position: right center;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 35%); mask-image: linear-gradient(to right, transparent, #000 35%);
+}
 .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
 .detail-panel { display: none; }
 
@@ -162,7 +169,6 @@ input[type="search"], input[type="text"], select {
   .col { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
   .detail-panel { display: block; position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow: auto; }
   .detail-panel .detail { padding: 0; }
-  .class-art { flex-basis: 132px; height: 168px; }
   .detail-title .big { font-size: 2.1rem; }
 }
 @media (max-width: 1199px) { .col { display: contents; } }
@@ -210,8 +216,6 @@ input[type="search"], input[type="text"], select {
 
 /* 明細面板標頭：職業圖示｜Discord 頭像｜角色 ID（上）與 Discord ID（下，反灰）｜最後上傳時間（右下）。 */
 .detail-head { align-items: stretch; }
-.detail-head .class-art { flex: 0 0 72px; height: 72px; }
-.detail-head .class-art span { font-size: 1.1rem; }
 .avatar { flex: 0 0 72px; height: 72px; border-radius: 50%; overflow: hidden; position: relative; display: grid; place-items: center; background: var(--surface-2); border: 1px solid var(--line); }
 .avatar span { font-size: 1.5rem; font-weight: 650; color: var(--text-3); }
 .avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
@@ -224,13 +228,15 @@ input[type="search"], input[type="text"], select {
 .headline { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .headline .big { font-size: 1.7rem; font-weight: 650; line-height: 1.15; }
 @media (min-width: 1200px) {
-  .detail-head .class-art, .avatar { flex-basis: 88px; height: 88px; }
+  .avatar { flex-basis: 88px; height: 88px; }
+  .class-art.banner { height: 88px; }
   .detail-title .character { font-size: 1.6rem; }
   .headline .big { font-size: 2.1rem; }
 }
 @media (max-width: 420px) {
   .detail-head { flex-wrap: wrap; }
-  .detail-head .class-art, .avatar { flex-basis: 56px; height: 56px; }
+  .avatar { flex-basis: 56px; height: 56px; }
+  .class-art.banner { height: 60px; }
   .uploaded { flex-basis: 100%; display: block; }
   .uploaded time { margin-left: 6px; }
 }

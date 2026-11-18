@@ -14,11 +14,10 @@ export const CONFIG = {
     backgroundDim: 0.3,
     // 頁首右側的插圖（寬螢幕才顯示）。留空不顯示。
     hero: '',
-    // 各職業在明細面板的插圖：{ 職業代碼: 圖片路徑 }，沒設定的職業顯示代碼字樣。
-    // 例：classes: { DaB: './art/classes/DaB.webp', CU: './art/classes/CU.webp' }
-    classes: {},
-    // 各職業的小圖示（列表列首與明細標頭的方形圖）。沒設定時改用上面 classes 的圖，再沒有就顯示代碼字樣。
-    // 例：classIcons: { DaB: './art/icons/DaB.png', CU: './art/icons/CU.png' }
-    classIcons: {},
+    // 職業橫幅所在資料夾，檔名＝職業代碼.png（大小寫要和計算機一致，如 DaB.png）。
+    // 明細面板顯示整張橫幅；找不到圖就顯示代碼字樣。留空停用。
+    classArtDir: './art/classes/',
+    // 列表列首的方形職業頭像（從橫幅裁出臉部），檔名規則同上。
+    classIconDir: './art/icons/',
   },
 };

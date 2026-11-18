@@ -90,11 +90,12 @@ const ownerOf = entry => entry.id.split('/')[0];
 const hashOf = entry => `#e-${entry.id.replace('/', '-')}`;
 const className = job => state.index.classes.find(item => item.id === job)?.name ?? job;
 
-/** 職業圖示：優先用 config.js 的 classIcons，其次 classes；都沒有（或載入失敗）就顯示職業代碼字樣。 */
-function classArt(job) {
-  const box = h('div', { class: 'class-art', 'aria-hidden': 'true' }, h('span', {}, job));
-  const source = CONFIG.art?.classIcons?.[job] ?? CONFIG.art?.classes?.[job];
-  if (source) {
+/** 職業圖：'icon' 是列表列首的方形臉部頭像，'banner' 是明細面板的整張橫幅；載入失敗就顯示職業代碼字樣。 */
+function classArt(job, variant = 'icon') {
+  const box = h('div', { class: `class-art ${variant}`, 'aria-hidden': 'true' }, h('span', {}, variant === 'banner' ? className(job) : job));
+  const dir = variant === 'banner' ? CONFIG.art?.classArtDir : CONFIG.art?.classIconDir;
+  if (dir && /^[A-Za-z]{1,8}$/.test(job)) {
+    const source = `${dir}${job}.png`;
     const image = h('img', { alt: '', loading: 'lazy', onload: () => box.classList.add('has-image'), onerror: () => image.remove() });
     image.src = source;
     box.append(image);
@@ -163,8 +164,8 @@ function renderDetail(entry) {
   const siblings = state.index.entries.filter(item => ownerOf(item) === ownerOf(entry))
     .sort((a, b) => a.job.localeCompare(b.job) || a.slot.localeCompare(b.slot));
   return h('div', { class: 'detail' },
+    classArt(entry.job, 'banner'),
     h('header', { class: 'detail-head' },
-      classArt(entry.job),
       avatar(entry),
       h('div', { class: 'detail-title' },
         h('div', { class: 'character' }, entry.character),

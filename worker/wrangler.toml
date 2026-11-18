@@ -13,8 +13,8 @@ new_sqlite_classes = ["Limiter"]
 
 [vars]
 # Dashboard 網站網址，結尾要有斜線。CORS 與登入後導回都以它為準。
-SITE_URL = "https://YOUR_NAME.github.io/loadout-dashboard/"
-GITHUB_REPO = "YOUR_NAME/loadout-dashboard"
+SITE_URL = "https://yixiwinston.github.io/ElswordTW_EquiqDashBoard/"
+GITHUB_REPO = "yixiwinston/ElswordTW_EquiqDashBoard"
 GITHUB_BASE_BRANCH = "main"
 GITHUB_APP_ID = "REPLACE"
 GITHUB_INSTALLATION_ID = "REPLACE"

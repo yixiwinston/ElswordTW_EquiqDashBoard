@@ -48,6 +48,20 @@ Worker 會包一層信封，並以 `Dash_<slot>.json` 的名稱寫進 repo；`<s
 
 檔案大小、每帳號份數、送出頻率、帳號年齡、下架天數等預設值與修改位置，見 [CLAUDE.md](../CLAUDE.md) 的「目前的上限與預設值」。
 
+## 部署進度
+
+最後確認：2026-11-18。
+
+| 步驟 | 狀態 | 備註 |
+|---|---|---|
+| 1. GitHub repo ＋ Pages | ✅ 完成 | `yixiwinston/ElswordTW_EquiqDashBoard`（公開）；網站 https://yixiwinston.github.io/ElswordTW_EquiqDashBoard/ 。`deploy.yml` 手動與每日排程皆成功，目前 0 筆投稿。三層 CI 手動觸發皆通過。 |
+| 2. GitHub App | ⬜ 未開始 | 需要 App ID、Installation ID、PKCS#8 私鑰 |
+| 3. Discord 應用程式 | ⬜ 未開始 | 需要 Client ID、Client Secret、（建議）伺服器 ID |
+| 4. Cloudflare Worker | ⬜ 未開始 | `wrangler.toml` 已填 `SITE_URL`、`GITHUB_REPO`；其餘仍是 `REPLACE` |
+| 5. 網站接上 Worker | ⬜ 未開始 | `site/config.js` 的 `apiBase` 仍為空（上傳功能停用中） |
+| 6. Repo 設定 | ⬜ 未確認 | `CALCULATOR_REF`、`DASH_AUTO_MERGE` 需登入 GitHub 才查得到；`main` 尚未設保護 |
+| 7. 上線前走一遍 | ⬜ 未開始 | 依賴 2～5 |
+
 ## 部署步驟
 
 前置：一個 GitHub 帳號、一個 Cloudflare 帳號（免費方案即可）、一個 Discord 帳號，本機有 Node.js 24 與 git。
@@ -119,16 +133,21 @@ npx wrangler deploy
 ## 背景圖與插圖
 
 `site/config.js` 的 `art` 區塊：`background`（整頁背景）、`backgroundDim`（遮罩濃度）、`hero`（頁首插圖）、
-`classes`（各職業在明細面板的插圖，以職業代碼對應）。把圖放進 `site/art/` 後改路徑即可；內附的兩張 SVG 只是佔位。
+`classArtDir`（職業橫幅資料夾）。把圖放進 `site/art/` 後改路徑即可。
 
 | 用途 | 建議放置路徑 | `config.js` 欄位 | 建議規格 |
 |---|---|---|---|
 | 整頁背景 | `site/art/background.webp` | `art.background` | 1920×1080 以上，橫式 |
 | 預設動態場景 | `site/art/scene.svg`（由 `node scripts/make-scene.mjs` 產生） | `art.background` | 月夜稻草人，純向量與 CSS 動畫；開啟「減少動態效果」的裝置會靜止 |
 | 頁首插圖 | `site/art/hero.png` | `art.hero` | 去背，顯示高度 150px |
-| 職業圖示 | `site/art/icons/<職業代碼>.png` | `art.classIcons` | 正方形，至少 176×176 |
+| 職業橫幅 | `site/art/classes/<職業代碼>.png` | `art.classArtDir` | 4:1 橫幅（現有 240×60），顯示在明細面板 |
+| 職業頭像 | `site/art/icons/<職業代碼>.png` | `art.classIconDir` | 正方形（現有 52×52，從橫幅以臉部為中心手動裁切），顯示在列表列首 |
 
-檔名與路徑沒有強制規定，網站只認 `config.js` 裡寫的路徑（相對於 `site/`）；職業代碼要跟計算機一致（如 `DaB`、`CU`），大小寫有別。
+網站只認 `config.js` 裡寫的路徑（相對於 `site/`）。職業橫幅的檔名要跟計算機的職業代碼一致（如 `DaB.png`、`CU.png`），大小寫有別；找不到圖的職業會顯示代碼字樣。
+
+現有 60 張職業橫幅取自 DungeonCounter_V2 的 `QML_HUD/Library/CharacterDraw/Cutver/Resized240/`，複製時改成計算機代碼：
+`DAB/CET/DIA/BMA` → `DaB/CeT/DiA/BMa`；`BG` → `BI`（DungeonCounter 原本就缺 `BI.png`，推測是同一職業，待確認）；
+有多版本的 `CT/DA/DE/IN` 用第 2 版（與 DungeonCounter 預設一致）。圖像版權屬遊戲原權利人，本站為非營利社群用途，頁尾已標示。
 
 寬度 1200px 以上（含 1920×1080）會變成左排行、右明細的雙欄版面。請只使用你有權使用的圖片。
 

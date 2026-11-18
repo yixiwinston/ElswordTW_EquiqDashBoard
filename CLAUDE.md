@@ -3,7 +3,7 @@
 這份筆記給接手的開發者（或 Claude Code）讀，記錄專案現況、做過的決定與原因、還沒完成的事。
 部署步驟請看 `docs/DEPLOY.md`；這裡不重複。`README.md` 是給玩家看的公開說明，不放內部或架站資訊。
 
-最後更新：2026-11-18。專案在一般 Claude 對話中開發，**尚未在真實的 Discord、GitHub、Cloudflare 環境跑過**。
+最後更新：2026-11-18。專案在一般 Claude 對話中開發。GitHub repo 與 Pages 已上線（進度見 `docs/DEPLOY.md`「部署進度」）；**Discord、GitHub App、Cloudflare Worker 尚未建立**。
 
 ---
 
@@ -32,7 +32,7 @@ upload.html ──Discord 登入──► Worker（worker/src/index.js）──�
 | `site/lib/common.js` | 兩頁共用：DOM 小工具 `h()`、登入權杖、呼叫 API、套用背景 |
 | `site/lib/dash-format.js` | **格式規則唯一來源**。瀏覽器、Worker、Actions 都 import 這份 |
 | `site/config.js` | Worker 網址 `apiBase`、背景與圖示路徑 |
-| `site/art/` | 背景與插圖。`scene.svg` 由 `scripts/make-scene.mjs` 產生，不要手改 |
+| `site/art/` | 背景與插圖。`scene.svg` 由 `scripts/make-scene.mjs` 產生，不要手改；`classes/<職業代碼>.png` 是職業橫幅、`icons/<職業代碼>.png` 是從橫幅裁出的臉部頭像 |
 | `worker/src/index.js` | Discord OAuth、session、速率限制（Durable Object）、開 PR、`/api/me` |
 | `worker/wrangler.toml` | Worker 設定；密鑰不放這裡，用 `wrangler secret put` |
 | `scripts/validate-submission.mjs` | PR 檢查第一關 |
@@ -66,6 +66,7 @@ upload.html ──Discord 登入──► Worker（worker/src/index.js）──�
 - **總增幅**：使用者定義為「純面板可提供的傷害總增幅，不算角色額外 Buff／Debuff」。目前取計算機算出的理論傷害，外部破防與無視防禦加成固定為 0、不帶入 Buff 模擬器。程式在 `scripts/lib/calculator.mjs` 的 `summarize()`（`evaluateLoadout(gameData, state, false, false, 0, 0)`）。
 - **致命一擊、極大化**：有非線性遞減。表上預設顯示副本內實際值（`combatRates.*.finalRate`）；點擊切換「黃字」（`baseRawStatPct`，計算機的「角色屬性合計」，不含職業被動那段遞減來源）。
 - **聖獸精靈石顏色、賦靈錄**：直接取自匯出檔。
+- **匯出檔自帶的開關**（`nutProtectionPotionEnabled` 藥水、`nephronRaidEnabled` 襲擊戰、`petSkillAttackEnabled` 寵物技能）：照檔案內容計算，檔案有開就算進總增幅（2026-11-18 使用者決定）。
 
 ## 目前的上限與預設值
 
@@ -84,15 +85,14 @@ upload.html ──Discord 登入──► Worker（worker/src/index.js）──�
 
 依重要性排序。
 
-1. **【待使用者決定】匯出檔自帶的開關要不要算進總增幅**：`nutProtectionPotionEnabled`（藥水）、`nephronRaidEnabled`（襲擊戰）、`petSkillAttackEnabled`（寵物技能）。目前照檔案內容計算；若算 Buff，要在 `summarize()` 解碼後強制關掉。
-2. **真實環境驗證**：Discord OAuth、GitHub App、兩個 workflow（特別是 `report` job 的留言與關閉）、Durable Object 都只在本機模擬過。部署後照 `docs/DEPLOY.md`「上線前自己走一遍」測。
-3. **上傳前預覽**：選檔後看不到上榜後的樣子。做法是把計算機的解碼模組打包進網站，前端直接呈現完整面板（作者已同意開源使用）。
-4. **職業圖示**：`site/art/icons/` 是空的。放圖後在 `config.js` 的 `art.classIcons` 逐一對應（代碼大小寫有別，如 `DaB`、`CU`）。只能用有權使用的素材。
-5. **CI**：已接進 Actions，分三層（皆唯讀、略過只改 `data/loadouts/` 的投稿 PR）：`ci.yml` 每次都跑單元測試＋PR 閘門攻擊；`ci-worker.yml` 改到 Worker／`site/lib`／`security` 才跑 Worker 攻擊（mock＋wrangler dev）；`ci-frontend.yml` 改到 `site/` 等才建計算機並跑前端注入測試。尚未設定 branch protection 把它們設為必要檢查。
-6. **管理工具**：下架某筆只能手動刪 `data/loadouts/` 的檔案（走 PR）。
-7. **部署失敗沒有通知**：每日排程重建若因計算機更新而壞掉，不會有人知道。建議把 `CALCULATOR_REF` 固定到確認過的 commit。
-8. **其他已知風險**：詳見本機的 `security/RISKS.local.md`（`*.local.md` 已 gitignore，不會提交；新 clone 不會有這份，需向維護者取得）。repo 是公開的，**尚未修補的漏洞細節不要寫進任何會提交的檔案**。
-9. 缺 LICENSE 與正式的隱私／資料移除說明。（計算機作者與出處已標示在 `index.html`、`upload.html` 頁尾。）
+1. **真實環境驗證**：Discord OAuth、GitHub App、兩個 workflow（特別是 `report` job 的留言與關閉）、Durable Object 都只在本機模擬過。部署後照 `docs/DEPLOY.md`「上線前自己走一遍」測。
+2. **上傳前預覽**：選檔後看不到上榜後的樣子。做法是把計算機的解碼模組打包進網站，前端直接呈現完整面板（作者已同意開源使用）。
+3. **職業橫幅待確認**：60 張已放進 `site/art/classes/`（來源與改名對照見 `docs/DEPLOY.md`「背景圖與插圖」）。`BI.png` 是從 `BG.png` 推測對應，需使用者確認。素材只有 240×60，要更清楚需更大的原圖。使用權：官方對非營利引用不干涉，本站限 Discord 特定群組、無營利（2026-11-18 使用者確認），頁尾已標示版權。
+4. **CI**：已接進 Actions，分三層（皆唯讀、略過只改 `data/loadouts/` 的投稿 PR）：`ci.yml` 每次都跑單元測試＋PR 閘門攻擊；`ci-worker.yml` 改到 Worker／`site/lib`／`security` 才跑 Worker 攻擊（mock＋wrangler dev）；`ci-frontend.yml` 改到 `site/` 等才建計算機並跑前端注入測試。尚未設定 branch protection 把它們設為必要檢查。
+5. **管理工具**：下架某筆只能手動刪 `data/loadouts/` 的檔案（走 PR）。
+6. **部署失敗沒有通知**：每日排程重建若因計算機更新而壞掉，不會有人知道。建議把 `CALCULATOR_REF` 固定到確認過的 commit。
+7. **其他已知風險**：詳見本機的 `security/RISKS.local.md`（`*.local.md` 已 gitignore，不會提交；新 clone 不會有這份，需向維護者取得）。repo 是公開的，**尚未修補的漏洞細節不要寫進任何會提交的檔案**。
+8. 缺 LICENSE 與正式的隱私／資料移除說明。（計算機作者與出處已標示在 `index.html`、`upload.html` 頁尾。）
 
 ## 常用指令
 
